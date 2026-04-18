@@ -1,0 +1,48 @@
+# sync-config-example.yaml
+# Copy this file to sync-config.yaml and fill in your connection details.
+# Run: java -jar dbsync-cli.jar -c sync-config.yaml
+
+source:
+  type: mysql           # mysql | postgresql
+  host: localhost
+  port: 3306
+  database: source_db
+  username: root
+  password: secret
+  # MySQL-specific: unique server ID for Debezium binlog reader
+  serverId: 12345
+
+target:
+  type: postgresql      # mysql | postgresql
+  host: localhost
+  port: 5432
+  database: target_db
+  username: postgres
+  password: secret
+  # PostgreSQL-specific (only needed when source is PostgreSQL):
+  # slotName: dbsync_slot
+  # pluginName: pgoutput
+
+sync:
+  # Tables to sync. Leave empty to sync ALL tables in the database.
+  tables:
+    - users
+    - orders
+    - products
+
+  # Automatically create / alter target tables to match source schema.
+  schemaSync: true
+
+  # Debezium snapshot mode:
+  #   initial      - full snapshot on first run, then CDC (recommended)
+  #   never        - skip snapshot, CDC only (requires pre-existing data in target)
+  #   schema_only  - capture schema but not data, then CDC
+  #   always       - re-snapshot on every start
+  snapshotMode: initial
+
+  # Batch size for writes to target database.
+  batchSize: 500
+
+  # File paths for Debezium state persistence (allow restart from checkpoint).
+  offsetStorePath: ./offsets.dat
+  schemaHistoryPath: ./schema-history.dat

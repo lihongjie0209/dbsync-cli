@@ -1,0 +1,17 @@
+quarkus:
+  log:
+    level: WARN
+    category:
+      "io.dbsync":
+        level: INFO
+      "io.debezium":
+        level: INFO
+  banner:
+    enabled: false
+
+# Disable Quarkus HTTP (CLI only)
+"%prod":
+  quarkus:
+    http:
+      host: localhost
+

@@ -1,0 +1,126 @@
+plugins {
+    id 'java'
+    id 'io.quarkus'
+    id 'jacoco'
+}
+
+repositories {
+    mavenCentral()
+    mavenLocal()
+}
+
+ext {
+    debeziumVersion = '2.7.3.Final'
+}
+
+dependencies {
+    implementation enforcedPlatform("${quarkusPlatformGroupId}:${quarkusPlatformArtifactId}:${quarkusPlatformVersion}")
+
+    // Quarkus core
+    implementation 'io.quarkus:quarkus-picocli'
+    implementation 'io.quarkus:quarkus-config-yaml'
+    implementation 'io.quarkus:quarkus-arc'
+    implementation 'io.quarkus:quarkus-jackson'
+
+    // Debezium Embedded Engine
+    implementation "io.debezium:debezium-api:${debeziumVersion}"
+    implementation "io.debezium:debezium-embedded:${debeziumVersion}"
+    implementation "io.debezium:debezium-connector-mysql:${debeziumVersion}"
+    implementation "io.debezium:debezium-connector-mariadb:${debeziumVersion}"
+    implementation "io.debezium:debezium-connector-postgres:${debeziumVersion}"
+    implementation "io.debezium:debezium-storage-file:${debeziumVersion}"
+
+    // Plain JDBC drivers (no Quarkus datasource overhead)
+    implementation 'com.mysql:mysql-connector-j:8.4.0'
+    implementation 'org.mariadb.jdbc:mariadb-java-client:3.3.3'
+    implementation 'org.postgresql:postgresql:42.7.3'
+
+    // Kingbase8 JDBC driver (not on Maven Central — supplied as local JAR)
+    implementation fileTree(dir: 'libs', include: ['*.jar'])
+
+    // Terminal UI
+
+    // YAML loading for user config files
+    implementation 'org.yaml:snakeyaml:2.2'
+
+    testImplementation 'io.quarkus:quarkus-junit5'
+    testImplementation 'io.quarkus:quarkus-junit5-mockito'
+    testImplementation 'org.mockito:mockito-core:5.11.0'
+
+    // Testcontainers — real MySQL + PostgreSQL for integration tests
+    testImplementation platform('org.testcontainers:testcontainers-bom:1.20.4')
+    testImplementation 'org.testcontainers:junit-jupiter'
+    testImplementation 'org.testcontainers:postgresql'
+    testImplementation 'org.testcontainers:mysql'
+    testImplementation 'org.testcontainers:mariadb'
+}
+
+test {
+    useJUnitPlatform()
+    finalizedBy jacocoTestReport
+}
+
+jacocoTestReport {
+    dependsOn test
+    // Exclude Quarkus entry-point (not unit-testable without a full Quarkus runtime)
+    classDirectories.setFrom(files(classDirectories.files.collect {
+        fileTree(dir: it, excludes: ['io/dbsync/Main.class'])
+    }))
+    reports {
+        xml.required = true
+        html.required = true
+    }
+}
+
+jacocoTestCoverageVerification {
+    classDirectories.setFrom(files(classDirectories.files.collect {
+        fileTree(dir: it, excludes: ['io/dbsync/Main.class'])
+    }))
+    violationRules {
+        rule {
+            limit {
+                minimum = 0.80
+            }
+        }
+    }
+}
+
+group = 'io.dbsync'
+version = '1.0.0-SNAPSHOT'
+
+// Debezium 2.7.x was built against Kafka 3.7.x.  The Quarkus 3.34+ BOM promotes
+// kafka-clients to 4.x which removed Utils.mkSet(), causing a NoSuchMethodError
+// in kafka-connect-json at startup.  Force Kafka artifacts back to 3.7.0.
+configurations.all {
+    resolutionStrategy {
+        force 'org.apache.kafka:kafka-clients:3.7.0'
+        force 'org.apache.kafka:connect-api:3.7.0'
+        force 'org.apache.kafka:connect-json:3.7.0'
+        force 'org.apache.kafka:connect-transforms:3.7.0'
+        force 'org.apache.kafka:connect-runtime:3.7.0'
+        force 'org.apache.kafka:connect-file:3.7.0'
+    }
+}
+
+java {
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
+}
+
+compileJava {
+    options.encoding = 'UTF-8'
+    options.compilerArgs << '-parameters'
+}
+
+compileTestJava {
+    options.encoding = 'UTF-8'
+}
+
+// Allow passing CLI args in dev mode:
+//   .\gradlew quarkusDev -Ddbsync.args="test -c test-manual.yaml"
+quarkusDev {
+    def passedArgs = System.getProperty('dbsync.args', '')
+    if (passedArgs) {
+        arguments passedArgs.split(' ') as String[]
+    }
+}

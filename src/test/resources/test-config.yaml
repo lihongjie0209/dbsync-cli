@@ -1,0 +1,26 @@
+source:
+  type: mysql
+  host: db.example.com
+  port: 3306
+  database: testdb
+  username: root
+  password: rootpass
+  serverId: 42
+
+target:
+  type: postgresql
+  host: pg.example.com
+  port: 5432
+  database: destdb
+  username: pguser
+  password: pgpass
+
+sync:
+  tables:
+    - users
+    - orders
+  schemaSync: true
+  snapshotMode: initial
+  batchSize: 200
+  offsetStorePath: ./test-offsets.dat
+  schemaHistoryPath: ./test-schema-history.dat

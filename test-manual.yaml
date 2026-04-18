@@ -1,0 +1,26 @@
+source:
+  type: mysql
+  host: localhost
+  port: 13307
+  database: sourcedb
+  username: root
+  password: root
+
+target:
+  type: postgresql
+  host: localhost
+  port: 15433
+  database: targetdb
+  username: pguser
+  password: pgpass
+
+sync:
+  tables:
+    - users
+    - products
+    - orders
+  schemaSync: true
+  snapshotMode: initial
+  batchSize: 500
+  offsetStorePath: ./offsets.dat
+  schemaHistoryPath: ./schema-history.dat
