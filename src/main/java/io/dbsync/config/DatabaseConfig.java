@@ -21,6 +21,25 @@ public class DatabaseConfig {
 
     private String url; // optional JDBC URL override (useful for testing)
 
+    /** Explicitly loads the JDBC driver class for this DB type.
+     *  Required in GraalVM native image where ServiceLoader-based driver discovery is disabled. */
+    public void loadDriver() {
+        String driverClass = switch (type) {
+            case "mysql"      -> "com.mysql.cj.jdbc.Driver";
+            case "mariadb"    -> "org.mariadb.jdbc.Driver";
+            case "postgresql" -> "org.postgresql.Driver";
+            case "kingbase"   -> "com.kingbase8.Driver";
+            default -> null;
+        };
+        if (driverClass != null) {
+            try {
+                Class.forName(driverClass);
+            } catch (ClassNotFoundException e) {
+                throw new RuntimeException("JDBC driver not found: " + driverClass, e);
+            }
+        }
+    }
+
     public String getUrl() { return url; }
     public void setUrl(String url) { this.url = url; }
 

@@ -11,6 +11,7 @@ import java.util.List;
 public class SchemaReader {
 
     public List<TableDef> readTables(DatabaseConfig dbConfig, List<String> tableFilter) throws Exception {
+        dbConfig.loadDriver();
         try (Connection conn = DriverManager.getConnection(dbConfig.jdbcUrl(),
                 dbConfig.getUsername(), dbConfig.getPassword())) {
 

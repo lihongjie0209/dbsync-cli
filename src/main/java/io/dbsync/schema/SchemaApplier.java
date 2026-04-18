@@ -44,6 +44,7 @@ public class SchemaApplier {
         }
 
         DatabaseConfig tgt = config.getTarget();
+        tgt.loadDriver();
         try (Connection conn = DriverManager.getConnection(tgt.jdbcUrl(),
                 tgt.getUsername(), tgt.getPassword())) {
             conn.setAutoCommit(true);

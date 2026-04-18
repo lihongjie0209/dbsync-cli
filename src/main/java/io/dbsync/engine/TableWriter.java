@@ -297,6 +297,7 @@ public class TableWriter {
 
     private Connection conn() throws Exception {
         if (connection == null || connection.isClosed()) {
+            targetConfig.loadDriver();
             connection = DriverManager.getConnection(
                     targetConfig.jdbcUrl(), targetConfig.getUsername(), targetConfig.getPassword());
             connection.setAutoCommit(true);
