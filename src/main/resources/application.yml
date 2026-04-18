@@ -26,5 +26,6 @@ quarkus:
         --initialize-at-run-time=org.glassfish.jersey,
         --initialize-at-run-time=org.apache.kafka.connect,
         --initialize-at-run-time=org.apache.kafka.common.network,
-        --initialize-at-run-time=org.apache.kafka.common.security
+        --initialize-at-run-time=org.apache.kafka.common.security,
+        --initialize-at-run-time=org.postgresql.sspi.SSPIClient
 
