@@ -26,8 +26,5 @@ quarkus:
         --initialize-at-run-time=org.glassfish.jersey,
         --initialize-at-run-time=org.apache.kafka.connect,
         --initialize-at-run-time=org.apache.kafka.common.network,
-        --initialize-at-run-time=org.apache.kafka.common.security,
-        --initialize-at-run-time=com.mysql.cj,
-        --initialize-at-run-time=org.mariadb.jdbc,
-        --initialize-at-run-time=org.postgresql
+        --initialize-at-run-time=org.apache.kafka.common.security
 
