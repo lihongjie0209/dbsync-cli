@@ -17,15 +17,14 @@ quarkus:
 
 # Native image: move JVM-centric libs (Jersey/Kafka Connect) to run-time init
 # to avoid GraalVM static analysis failures on OSGi/classpath-scanning code.
-# Also initialize JDBC drivers at run-time so their static blocks register
-# with DriverManager at startup rather than during the native image build.
+# org.postgresql.sspi uses JNA which is not available at build time.
 "%native":
   quarkus:
     native:
-      additional-build-args: >-
-        --initialize-at-run-time=org.glassfish.jersey,
-        --initialize-at-run-time=org.apache.kafka.connect,
-        --initialize-at-run-time=org.apache.kafka.common.network,
-        --initialize-at-run-time=org.apache.kafka.common.security,
-        --initialize-at-run-time=org.postgresql.sspi.SSPIClient
+      additional-build-args:
+        - "--initialize-at-run-time=org.glassfish.jersey"
+        - "--initialize-at-run-time=org.apache.kafka.connect"
+        - "--initialize-at-run-time=org.apache.kafka.common.network"
+        - "--initialize-at-run-time=org.apache.kafka.common.security"
+        - "--initialize-at-run-time=org.postgresql.sspi"
 
