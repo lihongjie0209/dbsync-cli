@@ -1,5 +1,8 @@
 package io.dbsync.config;
 
+import io.quarkus.runtime.annotations.RegisterForReflection;
+
+@RegisterForReflection
 public class SyncConfig {
 
     private DatabaseConfig source;

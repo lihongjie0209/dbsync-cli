@@ -1,8 +1,11 @@
 package io.dbsync.config;
 
+import io.quarkus.runtime.annotations.RegisterForReflection;
+
 import java.util.ArrayList;
 import java.util.List;
 
+@RegisterForReflection
 public class SyncOptions {
 
     /** Tables to sync. Empty = sync all tables. */

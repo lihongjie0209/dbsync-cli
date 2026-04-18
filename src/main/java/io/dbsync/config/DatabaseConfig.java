@@ -1,5 +1,8 @@
 package io.dbsync.config;
 
+import io.quarkus.runtime.annotations.RegisterForReflection;
+
+@RegisterForReflection
 public class DatabaseConfig {
 
     private String type;      // mysql | postgresql
