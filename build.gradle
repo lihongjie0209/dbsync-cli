@@ -92,6 +92,15 @@ version = '1.0.0-SNAPSHOT'
 // kafka-clients to 4.x which removed Utils.mkSet(), causing a NoSuchMethodError
 // in kafka-connect-json at startup.  Force Kafka artifacts back to 3.7.0.
 configurations.all {
+    // Jersey (Kafka Connect REST API) is not needed for Debezium Embedded mode.
+    // Excluding it removes ~10MB of classes and avoids GraalVM native image
+    // static analysis failures on OSGi/ServiceLoader code paths.
+    exclude group: 'org.glassfish.jersey.core'
+    exclude group: 'org.glassfish.jersey.containers'
+    exclude group: 'org.glassfish.jersey.inject'
+    exclude group: 'org.glassfish.jersey.media'
+    exclude group: 'org.glassfish.jersey.ext'
+
     resolutionStrategy {
         force 'org.apache.kafka:kafka-clients:3.7.0'
         force 'org.apache.kafka:connect-api:3.7.0'
