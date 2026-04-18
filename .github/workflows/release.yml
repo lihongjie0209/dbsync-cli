@@ -51,6 +51,7 @@ jobs:
   native-linux-amd64:
     name: Native image (Linux x86_64)
     runs-on: ubuntu-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -95,6 +96,7 @@ jobs:
   native-macos-arm64:
     name: Native image (macOS ARM64)
     runs-on: macos-14
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -139,6 +141,7 @@ jobs:
   native-macos-amd64:
     name: Native image (macOS x86_64)
     runs-on: macos-13
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -183,6 +186,7 @@ jobs:
   native-windows-amd64:
     name: Native image (Windows x86_64)
     runs-on: windows-latest
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
 
@@ -222,6 +226,7 @@ jobs:
   release:
     name: Create GitHub Release
     needs: [jar, native-linux-amd64, native-macos-arm64, native-macos-amd64, native-windows-amd64]
+    if: always() && needs.jar.result == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -270,4 +275,4 @@ jobs:
             ./dbsync sync -c config.yaml
             ```
           files: dist/**/*
-          fail_on_unmatched_files: true
+          fail_on_unmatched_files: false
