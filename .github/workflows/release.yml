@@ -206,6 +206,9 @@ jobs:
           key: gradle-${{ runner.os }}-graalvm-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
           restore-keys: gradle-${{ runner.os }}-graalvm-
 
+      - name: Set up MSVC (required for GraalVM native-image on Windows)
+        uses: ilammy/msvc-dev-cmd@v1
+
       - name: Build native image (Windows x86_64)
         shell: cmd
         run: gradlew.bat build -Dquarkus.native.enabled=true -Dquarkus.package.jar.enabled=false -x test --no-daemon
