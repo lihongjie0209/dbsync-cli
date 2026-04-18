@@ -75,7 +75,7 @@ jobs:
 
       - name: Build native image (Linux x86_64)
         run: |
-          ./gradlew build -Dquarkus.native.enabled=true -x test --no-daemon
+          ./gradlew build -Dquarkus.native.enabled=true -Dquarkus.package.jar.type=fast-jar -x test --no-daemon
         env:
           GRAALVM_HOME: ${{ env.GRAALVM_HOME }}
 
@@ -119,7 +119,7 @@ jobs:
 
       - name: Build native image (macOS ARM64)
         run: |
-          ./gradlew build -Dquarkus.native.enabled=true -x test --no-daemon
+          ./gradlew build -Dquarkus.native.enabled=true -Dquarkus.package.jar.type=fast-jar -x test --no-daemon
         env:
           GRAALVM_HOME: ${{ env.GRAALVM_HOME }}
 
@@ -163,7 +163,7 @@ jobs:
 
       - name: Build native image (macOS x86_64)
         run: |
-          ./gradlew build -Dquarkus.native.enabled=true -x test --no-daemon
+          ./gradlew build -Dquarkus.native.enabled=true -Dquarkus.package.jar.type=fast-jar -x test --no-daemon
         env:
           GRAALVM_HOME: ${{ env.GRAALVM_HOME }}
 
@@ -204,7 +204,7 @@ jobs:
 
       - name: Build native image (Windows x86_64)
         shell: cmd
-        run: gradlew.bat build -Dquarkus.native.enabled=true -x test --no-daemon
+        run: gradlew.bat build -Dquarkus.native.enabled=true -Dquarkus.package.jar.type=fast-jar -x test --no-daemon
 
       - name: Rename artifact
         shell: bash
