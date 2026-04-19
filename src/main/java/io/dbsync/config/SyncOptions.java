@@ -28,9 +28,10 @@ public class SyncOptions {
 
     /**
      * After snapshot completes, delete rows from target that no longer exist in source
-     * ("zombie rows" left from previous sync runs). Defaults to true.
+     * ("zombie rows" left from previous sync runs). Defaults to false.
+     * Enable explicitly in config: sync.cleanupOrphans: true
      */
-    private boolean cleanupOrphans = true;
+    private boolean cleanupOrphans = false;
 
     public List<String> getTables() { return tables; }
     public void setTables(List<String> tables) { this.tables = tables; }
