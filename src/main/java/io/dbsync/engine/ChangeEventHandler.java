@@ -37,6 +37,7 @@ public class ChangeEventHandler implements Consumer<ChangeEvent<String, String>>
     private final SyncProgressRegistry registry;
     private final ObjectMapper mapper = new ObjectMapper();
     private final Map<String, TableWriter> writers = new ConcurrentHashMap<>();
+    private volatile boolean streamingStarted = false;
 
     private final java.util.function.BiFunction<DatabaseConfig, String, TableWriter> writerFactory;
 
@@ -65,6 +66,15 @@ public class ChangeEventHandler implements Consumer<ChangeEvent<String, String>>
             String tableName = payload.path("source").path("table").asText("");
 
             if (tableName.isEmpty()) return;
+
+            // Detect transition from snapshot → streaming so empty tables
+            // (0 rows snapshotted) leave INITIALIZING state.
+            String snapshotField = payload.path("source").path("snapshot").asText("false");
+            boolean isStreaming  = "false".equals(snapshotField) || snapshotField.isEmpty();
+            if (isStreaming && !streamingStarted) {
+                streamingStarted = true;
+                registry.markStreamingStarted();
+            }
 
             TableWriter writer = writers.computeIfAbsent(tableName,
                     t -> writerFactory.apply(config.getTarget(), t));

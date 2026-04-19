@@ -26,6 +26,12 @@ public class SyncProgressRegistry {
         s.setLastEventMs(System.currentTimeMillis());
     }
 
+    public void markStreamingStarted() {
+        states.values().stream()
+                .filter(s -> s.getPhase() == SyncPhase.INITIALIZING)
+                .forEach(s -> s.setPhase(SyncPhase.CDC));
+    }
+
     public void markCdcEvent(String tableName, String op) {
         TableSyncState s = getOrCreate(tableName);
         s.setPhase(SyncPhase.CDC);
