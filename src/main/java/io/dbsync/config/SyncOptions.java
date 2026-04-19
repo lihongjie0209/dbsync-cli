@@ -26,6 +26,12 @@ public class SyncOptions {
     /** Path to Debezium schema history file (MySQL only). */
     private String schemaHistoryPath = "./schema-history.dat";
 
+    /**
+     * After snapshot completes, delete rows from target that no longer exist in source
+     * ("zombie rows" left from previous sync runs). Defaults to true.
+     */
+    private boolean cleanupOrphans = true;
+
     public List<String> getTables() { return tables; }
     public void setTables(List<String> tables) { this.tables = tables; }
 
@@ -43,4 +49,7 @@ public class SyncOptions {
 
     public String getSchemaHistoryPath() { return schemaHistoryPath; }
     public void setSchemaHistoryPath(String schemaHistoryPath) { this.schemaHistoryPath = schemaHistoryPath; }
+
+    public boolean isCleanupOrphans() { return cleanupOrphans; }
+    public void setCleanupOrphans(boolean cleanupOrphans) { this.cleanupOrphans = cleanupOrphans; }
 }

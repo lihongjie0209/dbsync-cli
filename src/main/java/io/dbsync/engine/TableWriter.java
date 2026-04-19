@@ -63,7 +63,70 @@ public class TableWriter {
     }
 
     public void upsert(JsonNode after, JsonNode before) throws Exception {
-        insert(after); // UPSERT SQL handles conflict
+        List<String> pks;
+        try {
+            pks = getPrimaryKeys();
+        } catch (Exception e) {
+            pks = List.of();
+        }
+
+        if (!pks.isEmpty()) {
+            insert(after); // ON CONFLICT (pk...) DO UPDATE handles the upsert
+            return;
+        }
+
+        // No primary key: attempt UPDATE using before-image for identification,
+        // then fall back to INSERT if the row doesn't exist yet.
+        log.warnf("Table '%s' has no primary key — UPDATE uses all before-image columns for matching; " +
+                  "duplicate rows or missing REPLICA IDENTITY FULL may cause incorrect behaviour", tableName);
+
+        List<String> afterCols = new ArrayList<>();
+        List<Object> afterVals = new ArrayList<>();
+        extractFields(after, afterCols, afterVals);
+
+        List<String> beforeCols = new ArrayList<>();
+        List<Object> beforeVals = new ArrayList<>();
+        if (before != null && !before.isNull() && !before.isMissingNode()) {
+            extractFields(before, beforeCols, beforeVals);
+        }
+
+        // Build WHERE from non-null before-image columns
+        List<String> whereCols = new ArrayList<>();
+        List<Object> whereVals = new ArrayList<>();
+        for (int i = 0; i < beforeCols.size(); i++) {
+            if (beforeVals.get(i) != null) {
+                whereCols.add(beforeCols.get(i));
+                whereVals.add(beforeVals.get(i));
+            }
+        }
+
+        if (whereCols.isEmpty()) {
+            // No usable before-image — fall back to plain insert
+            insert(after);
+            return;
+        }
+
+        String setCols = afterCols.stream().map(c -> qi(c) + " = ?").collect(Collectors.joining(", "));
+        String wherePart = whereCols.stream().map(c -> qi(c) + " = ?").collect(Collectors.joining(" AND "));
+        String sql = "UPDATE " + qi(tableName) + " SET " + setCols + " WHERE " + wherePart;
+
+        try (PreparedStatement ps = conn().prepareStatement(sql)) {
+            // bind SET values
+            Map<String, Integer> types = getColumnTypes();
+            for (int i = 0; i < afterVals.size(); i++) {
+                ps.setObject(i + 1, coerce(afterVals.get(i), types.get(afterCols.get(i).toLowerCase())));
+            }
+            // bind WHERE values
+            for (int i = 0; i < whereVals.size(); i++) {
+                ps.setObject(afterVals.size() + i + 1,
+                        coerce(whereVals.get(i), types.get(whereCols.get(i).toLowerCase())));
+            }
+            int affected = ps.executeUpdate();
+            if (affected == 0) {
+                // Row not found in target — insert it
+                insert(after);
+            }
+        }
     }
 
     public void delete(JsonNode record) throws Exception {
@@ -119,7 +182,10 @@ public class TableWriter {
 
         try (PreparedStatement ps = conn().prepareStatement(sql)) {
             bindValues(ps, whereCols, whereVals);
-            ps.executeUpdate();
+            int affected = ps.executeUpdate();
+            if (affected == 0) {
+                log.warnf("DELETE on '%s' WHERE %s affected 0 rows (row may not exist in target)", tableName, whereVals);
+            }
         }
     }
 

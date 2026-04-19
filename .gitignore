@@ -50,3 +50,6 @@ schema-history.dat
 tui-out.txt
 tui-err.txt
 run-out.txt
+
+# runtime logs
+*.log

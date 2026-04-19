@@ -17,6 +17,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 /**
@@ -38,6 +39,8 @@ public class ChangeEventHandler implements Consumer<ChangeEvent<String, String>>
     private final ObjectMapper mapper = new ObjectMapper();
     private final Map<String, TableWriter> writers = new ConcurrentHashMap<>();
     private volatile boolean streamingStarted = false;
+    /** Guards orphan-cleanup so it runs at most once per engine lifecycle. */
+    private final AtomicBoolean orphanCleanupFired = new AtomicBoolean(false);
 
     private final java.util.function.BiFunction<DatabaseConfig, String, TableWriter> writerFactory;
 
@@ -71,9 +74,19 @@ public class ChangeEventHandler implements Consumer<ChangeEvent<String, String>>
             // (0 rows snapshotted) leave INITIALIZING state.
             String snapshotField = payload.path("source").path("snapshot").asText("false");
             boolean isStreaming  = "false".equals(snapshotField) || snapshotField.isEmpty();
+            boolean isSnapshotLast = "last".equals(snapshotField);
+
+            // "last" is emitted once for the very last row of the complete snapshot.
+            // Trigger orphan cleanup here so zombie rows are cleaned even if no CDC
+            // events arrive after snapshot (quiescent source).
+            if (isSnapshotLast) {
+                maybeRunOrphanCleaner();
+            }
+
             if (isStreaming && !streamingStarted) {
                 streamingStarted = true;
                 registry.markStreamingStarted();
+                maybeRunOrphanCleaner();
             }
 
             TableWriter writer = writers.computeIfAbsent(tableName,
@@ -100,7 +113,11 @@ public class ChangeEventHandler implements Consumer<ChangeEvent<String, String>>
                     registry.markCdcEvent(tableName, "UPDATE");
                 }
                 case "d" -> { // delete
-                    if (!before.isNull() && !before.isMissingNode()) writer.delete(before);
+                    if (!before.isNull() && !before.isMissingNode()) {
+                        writer.delete(before);
+                    } else {
+                        log.warnf("DELETE skipped for table=%s — before is null/missing", tableName);
+                    }
                     registry.markCdcEvent(tableName, "DELETE");
                 }
             }
@@ -112,6 +129,25 @@ public class ChangeEventHandler implements Consumer<ChangeEvent<String, String>>
     public void close() {
         writers.values().forEach(w -> {
             try { w.close(); } catch (Exception ignored) {}
+        });
+    }
+
+    /** Runs the orphan cleaner exactly once (idempotent). */
+    private void maybeRunOrphanCleaner() {
+        if (!config.getSync().isCleanupOrphans()) return;
+        if (!orphanCleanupFired.compareAndSet(false, true)) return;
+        Thread.ofVirtual().name("orphan-cleaner").start(() -> {
+            try {
+                log.info("Orphan cleanup starting (zombie rows from previous sync runs)…");
+                int deleted = new OrphanCleaner(config).cleanAll();
+                if (deleted > 0) {
+                    log.infof("Orphan cleanup complete — removed %d zombie row(s) from target", deleted);
+                } else {
+                    log.info("Orphan cleanup complete — no zombie rows found");
+                }
+            } catch (Exception e) {
+                log.warnf(e, "Orphan cleanup failed");
+            }
         });
     }
 
