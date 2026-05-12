@@ -53,6 +53,7 @@ jobs:
     needs: [jar]
     runs-on: ubuntu-latest
     steps:
+          retention-days: 1
       - uses: actions/checkout@v4
 
       - name: Download all artifacts
