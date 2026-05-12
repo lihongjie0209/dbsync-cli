@@ -44,6 +44,7 @@ jobs:
         with:
           name: jacoco-report
           path: build/reports/jacoco/test/html/
+          retention-days: 1
 
       - name: Upload test results
         if: always()
@@ -51,3 +52,4 @@ jobs:
         with:
           name: test-results
           path: build/test-results/test/*.xml
+          retention-days: 1
